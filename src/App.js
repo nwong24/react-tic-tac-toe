@@ -63,11 +63,18 @@ function calculateWinner(squares) {
   return null;
 }
 
+
 export default function Game() {
   const [xIsNext, setXIsNext] = useState(true);
   const [history, setHistory] = useState([Array(9).fill(null)]);
   const [currentMove, setCurrentMove] = useState(0);
   const currentSquares = history[currentMove];
+
+  function resetGame() {
+    setHistory([Array(9).fill(null)]);
+    setXIsNext(true);
+    setCurrentMove(0);
+  }
 
   function handlePlay(nextSquares) {
     const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
@@ -102,6 +109,9 @@ export default function Game() {
       </div>
       <div className="game-info">
         <ol>{moves}</ol>
+      </div>
+      <div className="reset-button" style={{ marginLeft: '20px', marginTop: '16px' }}>
+        <button onClick={() => resetGame()}>Reset Game</button>
       </div>
     </div>
   );
