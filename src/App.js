@@ -59,35 +59,48 @@ function calculateWinner(squares) {
   return null;
 }
 
+
 function findBestMove(squares, player) {
   const opponent = player === 'O' ? 'X' : 'O';
   const moveOrder = [4, 0, 2, 6, 8, 1, 3, 5, 7];
-  /* find winning move for us */
-  let squaresCopy = squares.slice();
-  for (let i = 0; i < squaresCopy.length; i++) {
-    if (squaresCopy[i] === null) {
-      squaresCopy[i] = player;
-      if (calculateWinner(squaresCopy) === player)
-        return i;
-      squaresCopy[i] = null;
+
+  /* written with help from sonnet */
+  function minimax(board, depth, isMaximizing) {
+    /* base cases */
+    const winner = calculateWinner(board);
+    if (winner === player)
+      return 10 - depth;
+    if (winner === opponent)
+      return depth - 10;
+    if (!board.some(s => s === null))
+      return 0;
+
+    let bestScore = isMaximizing ? -Infinity : Infinity;
+    for (let i = 0; i < board.length; i++) {
+      if (board[i] === null) {
+        board[i] = isMaximizing ? player : opponent;
+        const score = minimax(board, depth + 1, !isMaximizing);
+        board[i] = null;
+        bestScore = isMaximizing ? Math.max(bestScore, score) : Math.min(bestScore, score);
+      }
+    }
+    return bestScore;
+  }
+
+  let bestScore = -Infinity;
+  let bestMove;
+  for (let i = 0; i < squares.length; i++) {
+    if (squares[i] === null) {
+      squares[i] = player;
+      const score = minimax(squares, 0, false);
+      squares[i] = null;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = i;
+      }
     }
   }
-  /* if we're here there was no winning move */
-  /* try to block enemy from winning */
-  for (let i = 0; i < squaresCopy.length; i++) {
-    if (squaresCopy[i] === null) {
-      squaresCopy[i] = opponent;
-      if (calculateWinner(squaresCopy) === opponent)
-        return i;
-      squaresCopy[i] = null;
-    }
-  }
-  for (let i = 0; i < moveOrder.length; i++) {
-    if (squares[moveOrder[i]] === null)
-      return moveOrder[i];
-  }
-  /* we should not be here */
-  return null;
+  return bestMove;
 }
 
 export default function Game() {
@@ -110,7 +123,7 @@ export default function Game() {
     const nextSquares = currentSquares.slice();
     const move = findBestMove(currentSquares, computerPlayer);
     /* while legal moves still exist */
-    if (move !== null && calculateWinner(nextSquares) === null) {
+    if (move !== undefined && calculateWinner(nextSquares) === null) {
       nextSquares[move] = computerPlayer;
       handlePlay(nextSquares, nextCurrent);
       setCurrentPlayer(nextCurrent);
