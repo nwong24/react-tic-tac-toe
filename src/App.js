@@ -8,17 +8,13 @@ function Square({ value, onSquareClick }) {
   );
 }
 
-function Board({ xIsNext, squares, onPlay }) {
+function Board({ xIsNext, squares, onPlay, currentPlayer }) {
   function handleClick(i) {
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
     const nextSquares = squares.slice();
-    if (xIsNext) {
-      nextSquares[i] = 'X';
-    } else {
-      nextSquares[i] = 'O';
-    }
+    nextSquares[i] = currentPlayer;
     onPlay(nextSquares);
   }
 
@@ -63,24 +59,25 @@ function calculateWinner(squares) {
   return null;
 }
 
-function findBestMove(squares) {
+function findBestMove(squares, player) {
+  const opponent = player === 'O' ? 'X' : 'O';
   const moveOrder = [4, 0, 2, 6, 8, 1, 3, 5, 7];
-  /* find winning move for O */
+  /* find winning move for us */
   let squaresCopy = squares.slice();
   for (let i = 0; i < squaresCopy.length; i++) {
     if (squaresCopy[i] === null) {
-      squaresCopy[i] = 'O';
-      if (calculateWinner(squaresCopy) === 'O')
+      squaresCopy[i] = player;
+      if (calculateWinner(squaresCopy) === player)
         return i;
       squaresCopy[i] = null;
     }
   }
   /* if we're here there was no winning move */
-  /* try to block X from winning */
+  /* try to block enemy from winning */
   for (let i = 0; i < squaresCopy.length; i++) {
     if (squaresCopy[i] === null) {
-      squaresCopy[i] = 'X';
-      if (calculateWinner(squaresCopy) === 'X')
+      squaresCopy[i] = opponent;
+      if (calculateWinner(squaresCopy) === opponent)
         return i;
       squaresCopy[i] = null;
     }
@@ -90,6 +87,7 @@ function findBestMove(squares) {
       return moveOrder[i];
   }
   /* we should not be here */
+  return null;
 }
 
 export default function Game() {
@@ -97,24 +95,40 @@ export default function Game() {
   const [history, setHistory] = useState([Array(9).fill(null)]);
   const [currentMove, setCurrentMove] = useState(0);
   const currentSquares = history[currentMove];
+  const [currentPlayer, setCurrentPlayer] = useState('X');
 
   function resetGame() {
     setHistory([Array(9).fill(null)]);
     setXIsNext(true);
     setCurrentMove(0);
+    setCurrentPlayer('X');
   }
 
-  function handlePlay(nextSquares) {
-    let nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
-  
-    /* if there hasn't been a winner and there are still empty squares */
-    /* let the automated moves happen */
-    if (!calculateWinner(nextSquares) && nextSquares.some(s => s === null)) {
-      const oSquares = nextSquares.slice();
-      oSquares[findBestMove(nextSquares)] = 'O';
-      nextHistory = [...nextHistory, oSquares];
+  function handleSwitch() {
+    const nextCurrent = currentPlayer === 'X' ? 'O' : 'X';
+    const computerPlayer = currentPlayer;
+    const nextSquares = currentSquares.slice();
+    const move = findBestMove(currentSquares, computerPlayer);
+    /* while legal moves still exist */
+    if (move !== null && calculateWinner(nextSquares) === null) {
+      nextSquares[move] = computerPlayer;
+      handlePlay(nextSquares, nextCurrent);
+      setCurrentPlayer(nextCurrent);
     }
-  
+  }
+
+  function handlePlay(nextSquares, currentCurrent = currentPlayer) {
+    let nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+
+    const nextXIsNext = nextHistory.length % 2 === 1;
+    const nextPlayer = nextXIsNext ? 'X' : 'O';
+
+    if (nextSquares.some(s => s === null) && !calculateWinner(nextSquares) && nextPlayer !== currentCurrent) {
+      const autoSquares = nextSquares.slice();
+      autoSquares[findBestMove(nextSquares, nextPlayer)] = nextPlayer;
+      nextHistory = [...nextHistory, autoSquares];
+    }
+
     setHistory(nextHistory);
     setCurrentMove(nextHistory.length - 1);
   }
@@ -141,13 +155,16 @@ export default function Game() {
   return (
     <div className="game">
       <div className="game-board">
-        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} currentPlayer={currentPlayer} />
       </div>
       <div className="game-info">
         <ol>{moves}</ol>
       </div>
       <div className="reset-button" style={{ marginLeft: '20px', marginTop: '16px' }}>
         <button onClick={() => resetGame()}>Reset Game</button>
+        <button onClick={() => handleSwitch()} style={{ marginLeft: '10px' }}>
+          Switch to Player {currentPlayer === 'X' ? 'O' : 'X'}
+        </button>
       </div>
     </div>
   );
