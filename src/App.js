@@ -63,6 +63,34 @@ function calculateWinner(squares) {
   return null;
 }
 
+function findBestMove(squares) {
+  const moveOrder = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+  /* find winning move for O */
+  let squaresCopy = squares.slice();
+  for (let i = 0; i < squaresCopy.length; i++) {
+    if (squaresCopy[i] === null) {
+      squaresCopy[i] = 'O';
+      if (calculateWinner(squaresCopy) === 'O')
+        return i;
+      squaresCopy[i] = null;
+    }
+  }
+  /* if we're here there was no winning move */
+  /* try to block X from winning */
+  for (let i = 0; i < squaresCopy.length; i++) {
+    if (squaresCopy[i] === null) {
+      squaresCopy[i] = 'X';
+      if (calculateWinner(squaresCopy) === 'X')
+        return i;
+      squaresCopy[i] = null;
+    }
+  }
+  for (let i = 0; i < moveOrder.length; i++) {
+    if (squares[moveOrder[i]] === null)
+      return moveOrder[i];
+  }
+  /* we should not be here */
+}
 
 export default function Game() {
   const [xIsNext, setXIsNext] = useState(true);
@@ -77,10 +105,18 @@ export default function Game() {
   }
 
   function handlePlay(nextSquares) {
-    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+    let nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+  
+    /* if there hasn't been a winner and there are still empty squares */
+    /* let the automated moves happen */
+    if (!calculateWinner(nextSquares) && nextSquares.some(s => s === null)) {
+      const oSquares = nextSquares.slice();
+      oSquares[findBestMove(nextSquares)] = 'O';
+      nextHistory = [...nextHistory, oSquares];
+    }
+  
     setHistory(nextHistory);
     setCurrentMove(nextHistory.length - 1);
-    setXIsNext(!xIsNext);
   }
 
   function jumpTo(nextMove) {
