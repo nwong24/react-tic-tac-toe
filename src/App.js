@@ -194,12 +194,14 @@ export default function Game() {
         <input type="text" value={pendingCols} onChange={e => setPendingCols(+e.target.value)} style={{ width: '30px' }} />
         <button onClick={() => {
           // with help from sonnet
-          if (currentSquares.some(s => s !== null)) return;
           setRows(pendingRows);
           setCols(pendingCols);
           if (pendingRows === rows && pendingCols === cols) return;
           const newSquares = Array(pendingRows * pendingCols).fill(null);
-          const newHistory = [...history.slice(0, currentMove), newSquares];
+          for (let r = 0; r < Math.min(rows, pendingRows); r++)
+          for (let c = 0; c < Math.min(cols, pendingCols); c++)
+          newSquares[r * pendingCols + c] = currentSquares[r * cols + c];
+          const newHistory = [...history.slice(0, currentMove + 1), newSquares];
           setHistory(newHistory);
           setCurrentMove(newHistory.length - 1);
         }}>
